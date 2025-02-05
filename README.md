@@ -70,3 +70,10 @@ Requirements:
 - Anthropic API key
 
 Note: Replace `your_openai_key` and `your_anthropic_key` with your actual API keys.
+
+# Create .env file
+echo "OPENAI_API_KEY=your_openai_key
+ANTHROPIC_API_KEY=your_anthropic_key" > .env
+
+# Run with env file
+docker run -p 8501:8501 --env-file .env creator001/ai-agent-shop:latest
