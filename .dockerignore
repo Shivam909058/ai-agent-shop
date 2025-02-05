@@ -1,0 +1,23 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+
+
+
+# Environment variables
+.env
+
+# Docker
+Dockerfile
+docker-compose.yml
