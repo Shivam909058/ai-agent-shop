@@ -58,7 +58,7 @@ ai-agent-shop/
 
 # use docker compose to run the application
 ```
-docker run -p 8501:8501 -e OPENAI_API_KEY=your_openai_key -e ANTHROPIC_API_KEY=your_anthropic_key creator001/ai-agent-shop:latest
+docker run -p 8501:8501 -e ANTHROPIC_API_KEY=your_key -e OPENAI_API_KEY=your_key yourusername/agno-agent-generator:latest
 ```
 
 2. Open your browser and visit: http://localhost:8501
@@ -75,4 +75,4 @@ echo "OPENAI_API_KEY=your_openai_key
 ANTHROPIC_API_KEY=your_anthropic_key" > .env
 
 # Run with env file
-docker run -p 8501:8501 --env-file .env creator001/ai-agent-shop:latest
+docker run -p 8501:8501 -e ANTHROPIC_API_KEY=your_key -e OPENAI_API_KEY=your_key yourusername/agno-agent-generator:latest
