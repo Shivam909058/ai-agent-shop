@@ -5,7 +5,6 @@ A powerful AI agent generator built on the Agno framework that lets you create c
 ## 🌟 Features
 
 - **Instant Agent Generation**: Create specialized AI agents with just a text description
-- **RAG-Powered**: Uses Retrieval Augmented Generation for accurate and contextual code generation
 - **Production-Ready**: Generates complete, working implementations following best practices
 - **Customizable**: Adjust parameters and configurations to suit your needs
 - **Easy to Use**: Simple web interface built with Streamlit
@@ -70,3 +69,10 @@ Requirements:
 - Anthropic API key
 
 Note: Replace `your_openai_key` and `your_anthropic_key` with your actual API keys.
+
+# Create .env file
+echo "OPENAI_API_KEY=your_openai_key
+ANTHROPIC_API_KEY=your_anthropic_key" > .env
+
+# Run with env file
+docker run -p 8501:8501 --env-file .env creator001/ai-agent-shop:latest
