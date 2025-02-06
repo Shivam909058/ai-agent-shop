@@ -5,7 +5,6 @@ A powerful AI agent generator built on the Agno framework that lets you create c
 ## 🌟 Features
 
 - **Instant Agent Generation**: Create specialized AI agents with just a text description
-- **RAG-Powered**: Uses Retrieval Augmented Generation for accurate and contextual code generation
 - **Production-Ready**: Generates complete, working implementations following best practices
 - **Customizable**: Adjust parameters and configurations to suit your needs
 - **Easy to Use**: Simple web interface built with Streamlit
