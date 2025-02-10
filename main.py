@@ -49,19 +49,34 @@ def clean_markdown_content(text: str) -> str:
     return '\n'.join(cleaned_lines)
 def init_knowledge_base():
     try:
+    
+        if os.path.exists("./data/vectordb"):
+            try:
+                
+                vectordb = Chroma(
+                    persist_directory="./data/vectordb",
+                    embedding_function=init_embeddings(),
+                    collection_name="agno_agents"
+                )
+                if vectordb._collection.count() > 0:
+                    st.success("Successfully loaded existing knowledge base!")
+                    return vectordb
+            except Exception as e:
+                st.error(f"Error loading existing vector store: {str(e)}")
+                return None
+        
+
         data_path = os.path.join(os.path.dirname(__file__), "data.txt")
         
         if not os.path.exists(data_path):
-            st.error("data.txt file not found! Please ensure it exists with Agno agent code.")
+            st.error("No existing knowledge base found and data.txt is missing! Please provide data.txt for first-time initialization.")
             return None
             
-        
+        st.info("Initializing new knowledge base from data.txt...")
         with open(data_path, 'r', encoding='utf-8') as f:
             content = f.read()
         
         cleaned_content = clean_markdown_content(content)
-        
-        
         texts = text_splitter.create_documents([cleaned_content])
         
         if not texts:
@@ -75,6 +90,7 @@ def init_knowledge_base():
             collection_name="agno_agents"
         )
         
+        vectordb.persist()
         return vectordb
         
     except Exception as e:
@@ -118,38 +134,80 @@ def search_knowledge_base(query: str, vectordb, top_k: int = 5):
 
 def generate_agent_code(agent_type: str, context: str):
     try:
-        prompt = f"""You are an expert Agno/Phidata developer. Based on these Agno agent implementations:
+        code_prompt = f"""You are an expert Agno/Phidata developer. Based on these Agno agent implementations:
 
         {context}
 
         Create a complete, working implementation of a {agent_type} using Agno framework.
-        Return only the Python code without any additional text or markdown formatting.
+        The code should be clean, well-documented, and include:
+        1. Clear docstrings explaining the purpose and usage
+        2. Helpful inline comments
+
         
-        The code should include:
-        1. Required imports
-        2. Agent configuration with appropriate tools
-        3. Specific instructions and descriptions
-        4. Example usage code
+        Return ONLY the Python code without any escape characters or string formatting.
+        The code should be properly formatted and indented.
         """
         
-        message = anthropic.messages.create(
+        info_prompt = f"""Create a clear explanation for the {agent_type} implementation that includes:
+
+        1. Brief Overview:
+           - What the agent does
+           - Main purpose and use cases
+
+        2. Key Features:
+           - List the main capabilities
+
+        Format the response in clean markdown with clear sections and bullet points.
+        Make it easy to read and understand, similar to professional documentation.
+        """
+
+        
+        code_message = anthropic.messages.create(
             model="claude-3-5-sonnet-20241022",
             max_tokens=4000,
             temperature=0.5,
-            messages=[{
-                "role": "user",
-                "content": prompt
-            }]
+            messages=[{"role": "user", "content": code_prompt}]
         )
         
-        response = message.content
-        if isinstance(response, list):
-            code = "\n".join(block.text for block in response if hasattr(block, 'text'))
-        else:
-            code = str(response)
         
-        code = code.replace("```python", "").replace("```", "").strip()
-        return code
+        info_message = anthropic.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=2000,
+            temperature=0.5,
+            messages=[{"role": "user", "content": info_prompt}]
+        )
+        
+        
+        code_content = str(code_message.content)
+        
+        
+        if "```python" in code_content:
+            code = code_content.split("```python")[1].split("```")[0].strip()
+        else:
+            code = code_content.strip()
+        
+        
+        code = (code
+            .replace('\\n', '\n')  
+            .replace('\\t', '\t')  
+            .replace('\\"', '"')   
+            .strip('"')          
+            .strip("'")          
+            .strip()              
+        )
+        
+        
+        info = str(info_message.content)
+        if "TextBlock" in info:
+            info = info.split("text='")[1].split("'")[0].replace("\\n", "\n")
+        
+        
+        info = info.replace('\\n', '\n').replace('\\t', '\t')
+        
+        return {
+            "code": code,
+            "info": info
+        }
         
     except Exception as e:
         st.error(f"Code generation failed: {str(e)}")
@@ -187,18 +245,40 @@ if st.button("Generate Agent"):
                 st.success("Found relevant examples and documentation!")
                 
                 with st.spinner("Generating specialized agent code..."):
-                    generated_code = generate_agent_code(agent_type, context)
+                    generated_result = generate_agent_code(agent_type, context)
                     
-                    if generated_code:
-                        st.success("Agent code generated successfully!")
-                        st.code(generated_code, language="python")
+                    if generated_result:
+                        st.success("Agent code and documentation generated successfully!")
                         
-                        st.download_button(
-                            label="Download Agent Code",
-                            data=generated_code,
-                            file_name=f"{agent_type.lower().replace(' ', '_')}_agent.py",
-                            mime="text/plain"
-                        )
+                        
+                        st.markdown("## 📖 Agent Documentation")
+                        st.markdown(generated_result["info"])
+                        
+                        
+                        st.markdown("## 💻 Generated Code")
+                        try:
+                            
+                            formatted_code = generated_result["code"].strip()
+                            st.code(formatted_code, language="python")
+                        except Exception as e:
+                            st.error(f"Error formatting code: {str(e)}")
+                        
+                        
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.download_button(
+                                "📥 Download Code",
+                                generated_result["code"],
+                                file_name=f"{agent_type.lower().replace(' ', '_')}_agent.py",
+                                mime="text/plain"
+                            )
+                        with col2:
+                            st.download_button(
+                                "📄 Download Documentation",
+                                generated_result["info"],
+                                file_name=f"{agent_type.lower().replace(' ', '_')}_docs.md",
+                                mime="text/plain"
+                            )
             else:
                 st.error("Could not find relevant documentation. Please try a different agent type.")
     else:
